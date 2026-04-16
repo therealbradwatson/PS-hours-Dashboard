@@ -1,0 +1,1605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TrellisPoint PS Hours Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Raleway:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+<style>
+  :root {
+    --blue-dark:  #005288;
+    --blue-light: #0093D0;
+    --orange:     #FF9902;
+    --lime:       #AFCA0B;
+    --green:      #2E7D32;
+    --green-light:#E8F5E9;
+    --yellow:     #F57F17;
+    --yellow-light:#FFF8E1;
+    --red:        #C62828;
+    --red-light:  #FFEBEE;
+    --gray-50:    #FAFAFA;
+    --gray-100:   #F5F5F5;
+    --gray-200:   #EEEEEE;
+    --gray-300:   #E0E0E0;
+    --gray-500:   #9E9E9E;
+    --gray-700:   #616161;
+    --gray-900:   #212121;
+    --white:      #FFFFFF;
+    --shadow-sm:  0 1px 3px rgba(0,0,0,0.08);
+    --shadow-md:  0 4px 12px rgba(0,0,0,0.10);
+    --radius:     8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Raleway', Calibri, sans-serif;
+    background: var(--gray-100);
+    color: var(--gray-900);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  /* ─── Header ─── */
+  .header {
+    background: var(--blue-dark); color: white;
+    padding: 0 24px; display: flex; align-items: center;
+    justify-content: space-between; height: 60px;
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  }
+  .header-brand { display: flex; align-items: center; gap: 12px; }
+  .header-logo {
+    width: 36px; height: 36px; background: var(--blue-light);
+    border-radius: 6px; display: flex; align-items: center;
+    justify-content: center; font-weight: 700; font-size: 16px; letter-spacing: -1px;
+  }
+  .header-title { font-weight: 600; font-size: 16px; }
+  .header-subtitle { font-weight: 300; font-size: 12px; color: rgba(255,255,255,0.7); margin-top: 1px; }
+  .header-meta { text-align: right; font-size: 12px; color: rgba(255,255,255,0.7); }
+  .header-connect-btn {
+    padding: 6px 14px; border-radius: 6px;
+    border: 1.5px solid rgba(255,255,255,0.3);
+    background: transparent; color: rgba(255,255,255,0.85);
+    font-family: inherit; font-size: 12px; font-weight: 600;
+    cursor: pointer; display: flex; align-items: center; gap: 6px;
+    transition: all 0.15s;
+  }
+  .header-connect-btn:hover { background: rgba(255,255,255,0.12); }
+  .header-connect-btn.connected { border-color: #AFCA0B; color: #AFCA0B; }
+  .connect-dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,0.3); }
+  .connect-dot.live { background: #AFCA0B; }
+
+  /* ─── Modal ─── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.45); z-index: 300;
+    align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: white; border-radius: 12px;
+    padding: 28px; width: 460px; max-width: 94vw;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+  }
+  .modal-title { font-size: 17px; font-weight: 700; color: var(--blue-dark); margin-bottom: 5px; }
+  .modal-subtitle { font-size: 13px; color: var(--gray-500); margin-bottom: 20px; }
+  .form-group { margin-bottom: 15px; }
+  .form-label {
+    display: block; font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    color: var(--gray-700); margin-bottom: 5px;
+  }
+  .form-input {
+    width: 100%; padding: 9px 12px;
+    border: 1.5px solid var(--gray-300); border-radius: 6px;
+    font-family: inherit; font-size: 14px; color: var(--gray-900);
+    transition: border-color 0.15s;
+  }
+  .form-input:focus { outline: none; border-color: var(--blue-light); }
+  .form-hint { font-size: 11px; color: var(--gray-500); margin-top: 4px; line-height: 1.4; }
+  .form-hint code { background: var(--gray-100); padding: 1px 5px; border-radius: 3px; font-size: 11px; }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+  .btn {
+    padding: 9px 18px; border-radius: 6px;
+    font-family: inherit; font-size: 13px; font-weight: 600;
+    cursor: pointer; border: none; transition: all 0.15s;
+  }
+  .btn-primary { background: var(--blue-dark); color: white; }
+  .btn-primary:hover { background: #003d66; }
+  .btn-primary:disabled { background: var(--gray-300); cursor: not-allowed; }
+  .btn-ghost { background: var(--gray-100); color: var(--gray-700); border: 1.5px solid var(--gray-300); }
+  .btn-ghost:hover { background: var(--gray-200); }
+  .btn-danger { background: var(--red-light); color: var(--red); border: 1.5px solid #FFCDD2; }
+  .btn-danger:hover { background: #FFCDD2; }
+  .btn-success { background: var(--green); color: white; }
+  .btn-success:hover { background: #1b5e20; }
+  .btn-success:disabled { background: var(--gray-300); cursor: not-allowed; }
+  .modal-status {
+    padding: 10px 12px; border-radius: 6px;
+    font-size: 13px; margin-top: 12px; display: none;
+  }
+  .modal-status.error   { background: var(--red-light);   color: var(--red);       display: block; }
+  .modal-status.success { background: var(--green-light); color: var(--green);     display: block; }
+  .modal-status.loading { background: #E3F2FD;            color: var(--blue-dark); display: block; }
+
+  /* ─── Loading ─── */
+  .loading-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(255,255,255,0.85); z-index: 200;
+    align-items: center; justify-content: center;
+    flex-direction: column; gap: 14px;
+  }
+  .loading-overlay.show { display: flex; }
+  .spinner {
+    width: 40px; height: 40px;
+    border: 3px solid var(--gray-200);
+    border-top-color: var(--blue-dark);
+    border-radius: 50%;
+    animation: spin 0.75s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { font-size: 14px; color: var(--gray-700); font-weight: 500; }
+  .loading-detail { font-size: 12px; color: var(--gray-500); }
+
+  /* ─── Main layout ─── */
+  .main { padding: 24px; max-width: 1300px; margin: 0 auto; }
+
+  /* ─── Card ─── */
+  .card {
+    background: var(--white); border-radius: var(--radius);
+    box-shadow: var(--shadow-sm); overflow: hidden;
+  }
+  .card-pad { padding: 20px; }
+  .section-title {
+    font-size: 13px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.6px;
+    color: var(--blue-dark); margin-bottom: 16px;
+  }
+
+  /* ─── Control panel ─── */
+  .controls {
+    display: flex; gap: 16px; flex-wrap: wrap;
+    align-items: flex-end; margin-bottom: 20px;
+  }
+  .control-group { display: flex; flex-direction: column; gap: 5px; }
+  .control-label {
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    color: var(--gray-700);
+  }
+  select.control-input, input.control-input {
+    padding: 8px 12px; border: 1.5px solid var(--gray-300);
+    border-radius: 6px; font-family: inherit; font-size: 14px;
+    color: var(--gray-900); background: white; cursor: pointer;
+  }
+  select.control-input:focus, input.control-input:focus {
+    outline: none; border-color: var(--blue-light);
+  }
+  .week-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: #E3F2FD; color: var(--blue-dark);
+    padding: 4px 10px; border-radius: 20px;
+    font-size: 12px; font-weight: 600;
+  }
+  .file-upload-area {
+    border: 1.5px dashed var(--gray-300); border-radius: 6px;
+    padding: 10px 14px; cursor: pointer; text-align: center;
+    font-size: 12px; color: var(--gray-500); transition: all 0.15s;
+    min-width: 200px;
+  }
+  .file-upload-area:hover { border-color: var(--blue-light); color: var(--blue-dark); }
+  .file-upload-area.loaded { border-color: var(--lime); color: var(--green); font-weight: 600; }
+  #file-input { display: none; }
+
+  /* ─── KPI strip ─── */
+  .kpi-strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px; margin-bottom: 20px;
+  }
+  .kpi-card {
+    background: var(--white); border-radius: var(--radius);
+    padding: 16px 20px; box-shadow: var(--shadow-sm);
+    border-top: 3px solid var(--gray-200);
+  }
+  .kpi-card.blue   { border-top-color: var(--blue-light); }
+  .kpi-card.orange { border-top-color: var(--orange); }
+  .kpi-card.lime   { border-top-color: var(--lime); }
+  .kpi-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; color: var(--gray-500); margin-bottom: 4px; }
+  .kpi-value { font-size: 26px; font-weight: 700; color: var(--gray-900); line-height: 1; }
+  .kpi-value.blue { color: var(--blue-dark); }
+  .kpi-sub { font-size: 11px; color: var(--gray-500); margin-top: 4px; }
+
+  /* ─── Preview table ─── */
+  .table-wrap { overflow-x: auto; }
+  .proj-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .proj-table th {
+    background: var(--gray-50); text-align: left;
+    padding: 10px 12px; font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    color: var(--gray-500); border-bottom: 2px solid var(--gray-200);
+    white-space: nowrap;
+  }
+  .proj-table th.current-week { background: #E3F2FD; color: var(--blue-dark); }
+  .proj-table td {
+    padding: 11px 12px; border-bottom: 1px solid var(--gray-100);
+    vertical-align: middle;
+  }
+  .proj-table tr:last-child td { border-bottom: none; }
+  .proj-table tr.totals-row td {
+    background: var(--gray-50); font-weight: 700;
+    border-top: 2px solid var(--gray-200);
+  }
+  .proj-table tr:not(.totals-row):hover td { background: var(--gray-50); }
+  .proj-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .proj-table td.current-week { background: #F0F7FF; }
+  .proj-table td.category-badge { white-space: nowrap; }
+
+  .badge-tm   { display:inline-block; padding:2px 7px; border-radius:4px; font-size:10px; font-weight:700; background:#E3F2FD; color:var(--blue-dark); }
+  .badge-ff   { display:inline-block; padding:2px 7px; border-radius:4px; font-size:10px; font-weight:700; background:var(--yellow-light); color:var(--yellow); }
+  .badge-zero { color: var(--gray-300); }
+
+  .delta-pos { color: var(--green); font-weight: 600; font-size: 12px; }
+  .delta-neg { color: var(--red);   font-weight: 600; font-size: 12px; }
+  .delta-zero { color: var(--gray-300); font-size: 12px; }
+
+  .proj-name { font-weight: 600; color: var(--blue-dark); }
+  .proj-client { font-size: 11px; color: var(--gray-500); }
+
+  /* ─── Actions bar ─── */
+  .actions-bar {
+    display: flex; gap: 12px; align-items: center;
+    padding: 16px 20px; border-top: 1px solid var(--gray-200);
+    background: var(--gray-50);
+  }
+  .actions-bar .spacer { flex: 1; }
+
+  /* ─── Misc ─── */
+  .mb-20 { margin-bottom: 20px; }
+  .hidden { display: none !important; }
+  .info-note {
+    background: #E3F2FD; border-left: 4px solid var(--blue-light);
+    padding: 10px 14px; border-radius: 0 6px 6px 0;
+    font-size: 12px; color: var(--blue-dark); line-height: 1.5;
+  }
+
+  @media (max-width: 700px) {
+    .main { padding: 16px; }
+    .controls { flex-direction: column; }
+  }
+
+  /* ─── Tabs ─── */
+  .tab-nav {
+    background: var(--blue-dark);
+    padding: 0 24px;
+    display: flex; gap: 4px;
+    border-bottom: 2px solid rgba(255,255,255,0.1);
+  }
+  .tab-btn {
+    padding: 10px 20px;
+    font-family: inherit; font-size: 13px; font-weight: 600;
+    color: rgba(255,255,255,0.6);
+    background: transparent; border: none; border-bottom: 3px solid transparent;
+    cursor: pointer; transition: all 0.15s; margin-bottom: -2px;
+  }
+  .tab-btn:hover { color: rgba(255,255,255,0.9); }
+  .tab-btn.active { color: white; border-bottom-color: var(--orange); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ─── About tab ─── */
+  .about-wrap { max-width: 820px; margin: 0 auto; padding: 32px 24px; }
+  .about-hero {
+    background: var(--blue-dark); color: white;
+    border-radius: var(--radius); padding: 28px 32px; margin-bottom: 24px;
+  }
+  .about-hero h1 { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+  .about-hero p  { font-size: 14px; color: rgba(255,255,255,0.75); line-height: 1.6; }
+  .about-section { margin-bottom: 28px; }
+  .about-section h2 {
+    font-size: 15px; font-weight: 700; color: var(--blue-dark);
+    border-bottom: 2px solid var(--blue-light); padding-bottom: 6px; margin-bottom: 14px;
+  }
+  .about-section p  { font-size: 13px; line-height: 1.7; color: var(--gray-700); margin-bottom: 10px; }
+  .about-section ul { font-size: 13px; line-height: 1.7; color: var(--gray-700); padding-left: 20px; margin-bottom: 10px; }
+  .about-section li { margin-bottom: 5px; }
+  .about-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 10px; }
+  .about-table th {
+    background: var(--blue-dark); color: white;
+    padding: 9px 12px; text-align: left; font-weight: 600; font-size: 12px;
+  }
+  .about-table td { padding: 8px 12px; border-bottom: 1px solid var(--gray-200); vertical-align: top; }
+  .about-table tr:nth-child(even) td { background: var(--gray-50); }
+  .about-pill {
+    display: inline-block; padding: 2px 8px; border-radius: 10px;
+    font-size: 11px; font-weight: 700;
+  }
+  .pill-tm  { background: #E3F2FD; color: #1565C0; }
+  .pill-ff  { background: #F3E5F5; color: #6A1B9A; }
+  .pill-note { background: var(--yellow-light); color: var(--yellow); border: 1px solid #FFE082; border-radius: var(--radius); padding: 12px 16px; font-size: 13px; margin-bottom: 10px; }
+  .steps { counter-reset: step; padding-left: 0; list-style: none; }
+  .steps li {
+    counter-increment: step;
+    padding: 10px 12px 10px 44px; position: relative;
+    border-left: 2px solid var(--gray-200); margin-left: 16px; margin-bottom: 6px;
+    font-size: 13px; color: var(--gray-700); line-height: 1.6;
+  }
+  .steps li::before {
+    content: counter(step);
+    position: absolute; left: -16px; top: 10px;
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--blue-dark); color: white;
+    font-size: 12px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .steps li strong { color: var(--gray-900); }
+</style>
+</head>
+<body>
+
+<!-- ═══ HEADER ══════════════════════════════════════════════════════ -->
+<header class="header">
+  <div class="header-brand">
+    <div class="header-logo">TP</div>
+    <div>
+      <div class="header-title">TrellisPoint PS Hours Dashboard</div>
+      <div class="header-subtitle">Project Hours Tracker</div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px">
+    <div class="header-meta" id="header-status-wrap">
+      <div id="data-source-label" style="font-size:12px;color:rgba(255,255,255,0.6)">Not connected to Teamwork</div>
+    </div>
+    <button class="header-connect-btn" id="connect-btn" onclick="openConnectModal()">
+      <span class="connect-dot" id="connect-dot"></span>
+      <span id="connect-label">Connect Teamwork</span>
+    </button>
+  </div>
+</header>
+
+<!-- ═══ CONNECTION MODAL ════════════════════════════════════════════ -->
+<div class="modal-overlay" id="connect-modal" onclick="closeOnOverlay(event)">
+  <div class="modal">
+    <div class="modal-title">🔌 Connect to Teamwork</div>
+    <div class="modal-subtitle">Credentials are stored locally in your browser — never sent anywhere except directly to your Teamwork account.</div>
+    <div class="form-group">
+      <label class="form-label" for="tw-site">Teamwork Site URL</label>
+      <input type="text" id="tw-site" class="form-input" placeholder="yourcompany.teamwork.com">
+      <div class="form-hint">Hostname only — e.g., <code>yourcompany.teamwork.com</code></div>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="tw-key">API Key</label>
+      <input type="password" id="tw-key" class="form-input" placeholder="Your Teamwork API key">
+      <div class="form-hint">Teamwork → Profile → Edit Profile → API Keys → Add New Token (read-only access)</div>
+    </div>
+    <div id="modal-status" class="modal-status"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeConnectModal()">Cancel</button>
+      <button class="btn btn-danger" id="btn-disconnect" style="display:none" onclick="disconnectTeamwork()">Disconnect</button>
+      <button class="btn btn-primary" id="btn-connect" onclick="testAndConnect()">Test &amp; Connect</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ LOADING OVERLAY ══════════════════════════════════════════════ -->
+<div class="loading-overlay" id="loading-overlay">
+  <div class="spinner"></div>
+  <div class="loading-text" id="loading-text">Fetching from Teamwork…</div>
+  <div class="loading-detail" id="loading-detail"></div>
+</div>
+
+<!-- ═══ TAB NAV ══════════════════════════════════════════════════════ -->
+<nav class="tab-nav">
+  <button class="tab-btn active" onclick="switchTab('projection', this)">📊 Projection</button>
+  <button class="tab-btn" onclick="switchTab('about', this)">ℹ About this Dashboard</button>
+</nav>
+
+<!-- ═══ MAIN ═════════════════════════════════════════════════════════ -->
+<main class="main">
+<div id="tab-projection" class="tab-panel active">
+
+  <!-- ── Control Panel ── -->
+  <div class="card card-pad mb-20">
+    <div class="section-title">Generate Projection</div>
+
+    <div class="controls">
+      <!-- Month -->
+      <div class="control-group">
+        <span class="control-label">Month</span>
+        <select id="proj-month" class="control-input" onchange="onMonthChange()">
+          <option value="1">January</option><option value="2">February</option>
+          <option value="3">March</option><option value="4">April</option>
+          <option value="5">May</option><option value="6">June</option>
+          <option value="7">July</option><option value="8">August</option>
+          <option value="9">September</option><option value="10">October</option>
+          <option value="11">November</option><option value="12">December</option>
+        </select>
+      </div>
+
+      <!-- Year -->
+      <div class="control-group">
+        <span class="control-label">Year</span>
+        <select id="proj-year" class="control-input" onchange="onMonthChange()"></select>
+      </div>
+
+      <!-- Current week indicator -->
+      <div class="control-group">
+        <span class="control-label">Week to Update</span>
+        <select id="proj-week" class="control-input">
+          <!-- populated dynamically -->
+        </select>
+      </div>
+
+      <!-- Prior file upload -->
+      <div class="control-group">
+        <span class="control-label">Prior Excel (carry-forward)</span>
+        <div class="file-upload-area" id="upload-area" onclick="document.getElementById('file-input').click()">
+          📂 Upload prior month's file (optional)
+        </div>
+        <input type="file" id="file-input" accept=".xlsx,.xls" onchange="onFileSelected(event)">
+      </div>
+
+      <!-- Generate button -->
+      <div class="control-group">
+        <span class="control-label">&nbsp;</span>
+        <button class="btn btn-primary" id="btn-generate" onclick="generateProjection()" style="padding:8px 22px">
+          ▶ Generate Projection
+        </button>
+      </div>
+    </div>
+
+    <div class="info-note" id="week-note">
+      Select a month and click Generate. The tool will fetch T&amp;M tasks and Fixed Fee milestones from Teamwork and calculate projected hours per project.
+    </div>
+  </div>
+
+  <!-- ── Diagnostic Panel (hidden until generated) ── -->
+  <div id="diag-section" class="card card-pad mb-20 hidden">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <div class="section-title" style="margin-bottom:0">Diagnostic Log</div>
+      <button id="diag-toggle" onclick="toggleDiagLog()"
+        style="font-family:inherit;font-size:12px;font-weight:600;padding:4px 12px;border-radius:6px;border:1.5px solid var(--gray-300);background:var(--gray-100);color:var(--gray-700);cursor:pointer">
+        ▶ Show
+      </button>
+    </div>
+    <pre id="diag-log" style="display:none;font-size:11px;line-height:1.6;color:var(--gray-700);white-space:pre-wrap;word-break:break-word;max-height:400px;overflow-y:auto;background:var(--gray-50);padding:12px;border-radius:6px;border:1px solid var(--gray-200)"></pre>
+  </div>
+
+  <!-- ── KPI Strip (hidden until generated) ── -->
+  <div id="kpi-section" class="hidden">
+    <div class="kpi-strip">
+      <div class="kpi-card blue">
+        <div class="kpi-label">Projected T&amp;M Hours</div>
+        <div class="kpi-value blue" id="kpi-total">—</div>
+        <div class="kpi-sub" id="kpi-month-label">Current month</div>
+      </div>
+      <div class="kpi-card orange">
+        <div class="kpi-label">vs Prior Week</div>
+        <div class="kpi-value" id="kpi-delta" style="color:var(--gray-500)">—</div>
+        <div class="kpi-sub">Change from last snapshot</div>
+      </div>
+      <div class="kpi-card lime">
+        <div class="kpi-label">Active Projects</div>
+        <div class="kpi-value" id="kpi-projects">—</div>
+        <div class="kpi-sub" id="kpi-projects-sub">T&amp;M hours this month</div>
+      </div>
+      <div class="kpi-card blue">
+        <div class="kpi-label">T&amp;M Projects</div>
+        <div class="kpi-value blue" id="kpi-tm">—</div>
+        <div class="kpi-sub">Hours from task estimates</div>
+      </div>
+      <div class="kpi-card orange">
+        <div class="kpi-label">Fixed Fee Projects</div>
+        <div class="kpi-value" style="color:var(--orange)" id="kpi-ff">—</div>
+        <div class="kpi-sub">Milestones due this month</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Preview Table (hidden until generated) ── -->
+  <div id="preview-section" class="card hidden">
+    <div style="padding:16px 20px;border-bottom:1px solid var(--gray-200);display:flex;align-items:center;justify-content:space-between">
+      <div class="section-title" style="margin-bottom:0" id="preview-title">Projection Preview</div>
+      <div style="font-size:12px;color:var(--gray-500)" id="preview-subtitle"></div>
+    </div>
+    <div class="table-wrap">
+      <table class="proj-table" id="preview-table">
+        <thead id="preview-thead"></thead>
+        <tbody id="preview-tbody"></tbody>
+      </table>
+    </div>
+    <div class="actions-bar">
+      <div style="font-size:12px;color:var(--gray-500)" id="actions-note"></div>
+      <div class="spacer"></div>
+      <button class="btn btn-success" id="btn-download" onclick="downloadExcel()">
+        ⬇ Download Excel
+      </button>
+    </div>
+  </div>
+
+</div><!-- /tab-projection -->
+
+<!-- ═══ ABOUT TAB ════════════════════════════════════════════════════ -->
+<div id="tab-about" class="tab-panel">
+  <div class="about-wrap">
+
+    <div class="about-hero">
+      <h1>TrellisPoint PS Hours Dashboard</h1>
+      <p>A PM-facing browser-based tool that tracks project hours across all active Professional Services engagements by pulling live task estimates and milestone data directly from Teamwork. No manual lookups, no copy-paste — one click generates the full monthly hours view.</p>
+    </div>
+
+    <div class="about-section">
+      <h2>What It Does</h2>
+      <p>Each week, this tool connects to Teamwork and calculates projected hours for all active Professional Services projects for the selected month. It produces two figures per project:</p>
+      <table class="about-table">
+        <thead><tr><th>Column</th><th>What It Represents</th><th>How It's Calculated</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Monthly Hours</strong></td>
+            <td>Total expected hours for the selected month — stable throughout the month as work progresses</td>
+            <td><strong>Hours already logged this month</strong> + <strong>hours still remaining</strong> on incomplete tasks due this month. Tasks due in a future month are pro-rated. As hours get logged, the "remaining" portion decreases by the same amount the "logged" portion increases — so the total stays consistent week over week.</td>
+          </tr>
+          <tr>
+            <td><strong>Budget Hours / Milestones</strong></td>
+            <td>For T&amp;M: total hours remaining in the project time budget. For Fixed Fee: count of all open milestones.</td>
+            <td><span class="about-pill pill-tm">T&amp;M</span> Project time budget (capacity − used billable hours) in hours. &nbsp;<span class="about-pill pill-ff">Fixed Fee</span> Count of all open/incomplete milestones regardless of date.</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>The gap between these two columns for T&amp;M projects shows where task estimates have drifted from the contracted budget hours — useful for spotting over- or under-estimated projects.</p>
+    </div>
+
+    <div class="about-section">
+      <h2>Calculation Logic by Project Type</h2>
+      <table class="about-table">
+        <thead><tr><th>Project Type</th><th>Monthly Hours</th><th>Budget Hours / Milestones</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="about-pill pill-tm">T&amp;M</span></td>
+            <td>
+              <strong>Step 1:</strong> Sum all hours logged against the project in the selected month (across all tasks, including completed ones).<br><br>
+              <strong>Step 2:</strong> For each <strong>incomplete task with a due date in the selected month</strong>, add the hours still remaining: <code>max(0, estimated − all-time logged)</code>. Tasks due in a future month are <strong>pro-rated</strong>: remaining ÷ months left. Tasks with no due date or past-due dates are <strong>excluded</strong> (PM should update them).<br><br>
+              <strong>Monthly Hours = Step 1 + Step 2.</strong> As hours are logged during the month, Step 1 increases and Step 2 decreases by the same amount — keeping the projection stable week over week.
+            </td>
+            <td>
+              Pulled directly from the Teamwork project time budget:<br>
+              <code>(budget capacity − billable hours used) ÷ 60</code><br>
+              Only billable time entries count toward "used."
+            </td>
+          </tr>
+          <tr>
+            <td><span class="about-pill pill-ff">Fixed Fee</span></td>
+            <td>
+              Count of <strong>incomplete milestones with deadlines in the selected month</strong>.
+            </td>
+            <td>
+              Count of <strong>all open/incomplete milestones</strong> for the project, regardless of deadline date.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="about-section">
+      <h2>How to Use It</h2>
+      <ol class="steps">
+        <li><strong>Connect to Teamwork</strong> — Click the connection button in the top-right corner and enter your Teamwork site URL and API key. Credentials are saved in your browser and reused automatically.</li>
+        <li><strong>Select the month</strong> — Choose the month and year you are tracking. Defaults to the current month.</li>
+        <li><strong>Select the week to update</strong> — Choose which week column in the output represents today's snapshot.</li>
+        <li><strong>(Optional) Upload prior file</strong> — Upload last week's Excel file to carry forward prior week columns into the download. The tool reads and preserves those columns automatically.</li>
+        <li><strong>Click Generate Projection</strong> — The tool fetches all active T&amp;M and Fixed Fee projects from Teamwork, calculates hours, and displays the results.</li>
+        <li><strong>Review the table</strong> — Compare Monthly Hours vs Budget Hours per project. The Δ column shows movement since the prior week if a prior file was uploaded.</li>
+        <li><strong>Download Excel</strong> — Click Download Excel to export the hours view in the standard format, ready to share or file.</li>
+      </ol>
+    </div>
+
+    <div class="about-section">
+      <h2>Requirements &amp; Setup</h2>
+      <ul>
+        <li><strong>Teamwork API key</strong> — Go to Teamwork → Profile → Edit Profile → API Keys → Add New Token. Read-only access is sufficient.</li>
+        <li><strong>Project categories</strong> — Projects must be assigned the category <strong>"T&amp;M"</strong> or <strong>"Fixed Fee"</strong> in Teamwork (exact spelling, case-insensitive). Projects without a recognized category are excluded.</li>
+        <li><strong>Teamwork time budget</strong> — For T&amp;M Budget Hours to display correctly, the project must have a Time Budget configured in Teamwork (Project Settings → Budget).</li>
+      </ul>
+    </div>
+
+    <div class="about-section">
+      <h2>Important Notes</h2>
+      <div class="pill-note">
+        <strong>Task due dates must be current.</strong> The Monthly Hours column only includes tasks with due dates in the selected month. If a task is past-due or has no due date, it will not appear in the projection. Project Managers are responsible for keeping task due dates up to date in Teamwork.
+      </div>
+      <div class="pill-note">
+        <strong>Monthly Hours vs Budget Hours.</strong> These two numbers will rarely match exactly for T&amp;M projects. Task estimates are set by PMs and can drift from the contracted SOW hours over time. The Budget Hours column reflects the contract and is the authoritative figure. Use Monthly Hours to understand planned work distribution; use Budget Hours to understand total remaining capacity.
+      </div>
+      <ul>
+        <li>Only <strong>billable</strong> time entries count against the project budget. Internal or non-billable time is excluded from Budget Hours.</li>
+        <li>This tool runs entirely in your browser. No data is sent anywhere except directly to your Teamwork instance via the API.</li>
+        <li>Credentials are stored in <code>localStorage</code> in your browser and are never transmitted to any third party.</li>
+      </ul>
+    </div>
+
+  </div>
+</div><!-- /tab-about -->
+
+</main>
+
+<!-- ═══ SCRIPT ════════════════════════════════════════════════════════ -->
+<script>
+'use strict';
+
+// ─── Diagnostic Log Toggle ────────────────────────────────────────────
+function toggleDiagLog() {
+  const log = document.getElementById('diag-log');
+  const btn = document.getElementById('diag-toggle');
+  const isHidden = log.style.display === 'none';
+  log.style.display = isHidden ? 'block' : 'none';
+  btn.textContent   = isHidden ? '▼ Hide' : '▶ Show';
+}
+
+// ─── Tab Switching ────────────────────────────────────────────────────
+function switchTab(id, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ─── State ────────────────────────────────────────────────────────────
+let _projectionRows = [];   // [{revenueType, client, project, projectId, category, revenue, tasks:[]}]
+let _weekFridays    = [];   // [Date, ...]
+let _currentWeekIdx = 0;
+let _priorData      = null; // {weekDates:[Date], byProject:{name->{weekRevs:[...], notes:str}}}
+let _lastResult     = null; // full result set for download
+
+// ─── Teamwork API Layer ───────────────────────────────────────────────
+const TW = {
+  get site()      { return (localStorage.getItem('tw_site') || '').replace(/^https?:\/\//, '').replace(/\/$/, ''); },
+  get key()       { return localStorage.getItem('tw_key') || ''; },
+  get connected() { return !!(this.site && this.key); },
+
+  authHeader() { return 'Basic ' + btoa(this.key + ':x'); },
+
+  async get(path) {
+    const url = 'https://' + this.site + path;
+    let res;
+    try {
+      res = await fetch(url, {
+        headers: { 'Authorization': this.authHeader(), 'Content-Type': 'application/json' }
+      });
+    } catch(netErr) {
+      if (window.location.protocol === 'file:') {
+        throw new Error(
+          'Chrome blocked the request (file:// CORS).\n\n' +
+          'Fix: serve via a local web server:\n' +
+          '  VS Code → right-click → Open with Live Server\n' +
+          '  or: python -m http.server 8080\n\n' +
+          'Original: ' + netErr.message
+        );
+      }
+      throw new Error('Network error: ' + netErr.message);
+    }
+    if (res.status === 401) throw new Error('Invalid API key or insufficient permissions.');
+    if (res.status === 404) throw new Error('Site not found — check your Teamwork URL.');
+    if (!res.ok)           throw new Error('HTTP ' + res.status + ': ' + res.statusText);
+    return res.json();
+  },
+
+  async testConnection() {
+    const data = await this.get('/me.json');
+    if (!data || !data.person) throw new Error('Unexpected response from Teamwork.');
+    return data.person;
+  },
+
+  async fetchProjects() {
+    const data = await this.get(
+      '/projects/api/v3/projects.json' +
+      '?projectStatuses=current,late,upcoming' +
+      '&include=projectUpdates,users,companies,projectCategories,projectBudgets' +
+      '&pageSize=250&limit=250'
+    );
+    const projects = data.projects || [];
+    const toArr = v => !v ? [] : Array.isArray(v) ? v : Object.values(v);
+    const companyMap  = {};
+    const categoryMap = {};
+    toArr(data.included?.companies        ).forEach(c => { companyMap[c.id]  = c; });
+    toArr(data.included?.projectCategories).forEach(c => { categoryMap[c.id] = c; });
+    return { projects, companyMap, categoryMap };
+  },
+
+  // Fetch all incomplete tasks for a project, filter client-side by due date
+  async fetchProjectTasks(projectId, monthStart, monthEnd) {
+    try {
+      let allTasks = [], page = 1, done = false;
+      while (!done) {
+        const data = await this.get(
+          '/projects/' + projectId + '/tasks.json' +
+          '?includeCompletedTasks=false&nestSubTasks=false' +
+          '&pageSize=250&page=' + page
+        );
+        const items = data['todo-items'] || [];
+        allTasks = allTasks.concat(items);
+        done = items.length < 250;
+        page++;
+      }
+      // If no date range supplied, return all tasks; otherwise filter to month
+      if (!monthStart || !monthEnd) return allTasks;
+      return allTasks.filter(t => {
+        const due = String(t['due-date'] || t.dueDate || '').replace(/-/g, '');
+        return due && due >= monthStart && due <= monthEnd;
+      });
+    } catch(e) {
+      console.warn('fetchProjectTasks(' + projectId + '):', e.message);
+      return [];
+    }
+  },
+
+  // Fetch milestones for a project, filtered to target month
+  async fetchProjectMilestones(projectId, monthStart, monthEnd) {
+    try {
+      const data = await this.get('/projects/' + projectId + '/milestones.json');
+      return (data.milestones || [])
+        .filter(m => {
+          if (m.completed === true || m.completed === 'yes') return false;
+          if (!monthStart && !monthEnd) return true; // no date filter — return all incomplete
+          const dl = parseTWDate(m.deadline || m['due-date'] || '');
+          if (!dl) return false;
+          const dlStr = fmtYYYYMMDD(dl);
+          return dlStr >= monthStart && dlStr <= monthEnd;
+        })
+        .map(m => ({
+          id:       m.id,
+          title:    m.title || '',
+          deadline: parseTWDate(m.deadline || m['due-date'] || '')
+        }));
+    } catch(e) {
+      console.warn('fetchProjectMilestones(' + projectId + '):', e.message);
+      return [];
+    }
+  },
+
+  // Fetch all time entries from fromDate to toDate (YYYYMMDD) with pagination
+  async fetchTimeEntries(fromDate, toDate, onProgress) {
+    let all = [], page = 1, done = false;
+    while (!done) {
+      if (onProgress) onProgress(all.length);
+      const data = await this.get(
+        '/time_entries.json?fromdate=' + fromDate + '&todate=' + toDate +
+        '&pageSize=500&page=' + page
+      );
+      const entries = data['time-entries'] || [];
+      all = all.concat(entries);
+      done = entries.length < 500;
+      page++;
+    }
+    return all;
+  },
+
+  async fetchAllProjectTasks(projectId) {
+    // Fetch ALL tasks including completed — needed for accurate total estimate
+    try {
+      let allTasks = [], page = 1, done = false;
+      while (!done) {
+        const data = await this.get(
+          '/projects/' + projectId + '/tasks.json' +
+          '?includeCompletedTasks=true&nestSubTasks=false' +
+          '&pageSize=250&page=' + page
+        );
+        const items = data['todo-items'] || [];
+        allTasks = allTasks.concat(items);
+        done = items.length < 250;
+        page++;
+      }
+      return allTasks;
+    } catch(e) {
+      console.warn('fetchAllProjectTasks(' + projectId + '):', e.message);
+      return [];
+    }
+  },
+
+  async fetchProjectTimeEntries(projectId) {
+    let all = [], page = 1, done = false;
+    while (!done) {
+      const data = await this.get(
+        '/projects/' + projectId + '/time_entries.json?pageSize=500&page=' + page
+      );
+      const entries = data['time-entries'] || [];
+      all = all.concat(entries);
+      done = entries.length < 500;
+      page++;
+    }
+    return all;
+  }
+};
+
+// ─── Date Helpers ──────────────────────────────────────────────────────
+function parseTWDate(str) {
+  if (!str || str === '0' || str === '') return null;
+  if (/^\d{8}$/.test(str)) return new Date(+str.slice(0,4), +str.slice(4,6)-1, +str.slice(6,8));
+  return new Date(str);
+}
+function fmtYYYYMMDD(d) {
+  return d.getFullYear() + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0');
+}
+// Returns the fraction [0–1] of a task's calendar window falling in the given month.
+// effectiveStart and dueDate are local Date objects.
+// Example: start=Apr 30, due=May 30 → April weight = 1/31 ≈ 0.032
+function taskMonthWeight(effectiveStart, dueDate, year, month) {
+  const mFirst  = new Date(year, month - 1, 1);
+  const mLast   = new Date(year, month, 0);
+  const wStart  = effectiveStart > mFirst ? effectiveStart : mFirst;
+  const wEnd    = dueDate < mLast ? dueDate : mLast;
+  if (wEnd < wStart) return 0;
+  const windowDays = Math.round((wEnd  - wStart)          / 86400000) + 1;
+  const totalDays  = Math.round((dueDate - effectiveStart) / 86400000) + 1;
+  return windowDays / Math.max(1, totalDays);
+}
+
+function fmtHours(n) {
+  if (n == null || isNaN(n)) return '—';
+  return n.toFixed(1) + 'h';
+}
+function fmtCount(n) {
+  return n + (n === 1 ? ' milestone' : ' milestones');
+}
+
+// ─── Week Helpers ──────────────────────────────────────────────────────
+function getMonthFridays(year, month) {
+  // Returns Date objects for each Friday in the given month (1-indexed)
+  const fridays = [];
+  const d = new Date(year, month - 1, 1);
+  // Advance to first Friday (day 5)
+  while (d.getDay() !== 5) d.setDate(d.getDate() + 1);
+  while (d.getMonth() === month - 1) {
+    fridays.push(new Date(d));
+    d.setDate(d.getDate() + 7);
+  }
+  return fridays;
+}
+
+function getCurrentWeekIdx(fridays) {
+  // Return index of the Friday on or most recently past today
+  const today = new Date(); today.setHours(0,0,0,0);
+  let idx = 0;
+  for (let i = 0; i < fridays.length; i++) {
+    if (fridays[i] <= today) idx = i;
+  }
+  return idx;
+}
+
+function fmtWeekLabel(d) {
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+function fmtWeekHeader(d) {
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+// ─── UI Initialization ────────────────────────────────────────────────
+function initControls() {
+  const now = new Date();
+  const yearSel = document.getElementById('proj-year');
+  for (let y = now.getFullYear() - 1; y <= now.getFullYear() + 1; y++) {
+    const o = document.createElement('option');
+    o.value = y; o.textContent = y;
+    if (y === now.getFullYear()) o.selected = true;
+    yearSel.appendChild(o);
+  }
+  document.getElementById('proj-month').value = now.getMonth() + 1;
+  onMonthChange();
+}
+
+function onMonthChange() {
+  const y = parseInt(document.getElementById('proj-year').value);
+  const m = parseInt(document.getElementById('proj-month').value);
+  _weekFridays = getMonthFridays(y, m);
+  _currentWeekIdx = getCurrentWeekIdx(_weekFridays);
+  const sel = document.getElementById('proj-week');
+  sel.innerHTML = '';
+  _weekFridays.forEach((f, i) => {
+    const o = document.createElement('option');
+    o.value = i;
+    o.textContent = 'Week of ' + fmtWeekLabel(f) + (i === _currentWeekIdx ? ' (current)' : '');
+    if (i === _currentWeekIdx) o.selected = true;
+    sel.appendChild(o);
+  });
+  updateWeekNote();
+}
+
+function updateWeekNote() {
+  const y = parseInt(document.getElementById('proj-year').value);
+  const m = parseInt(document.getElementById('proj-month').value);
+  const weekIdx = parseInt(document.getElementById('proj-week').value);
+  const fridays = getMonthFridays(y, m);
+  if (!fridays.length) return;
+  const f = fridays[weekIdx];
+  const monthName = f.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  document.getElementById('week-note').textContent =
+    'Generating projection for ' + monthName + '. ' +
+    'The "' + fmtWeekLabel(f) + '" column will be filled with fresh Teamwork data. ' +
+    ((_priorData && _priorData.weekDates.length) ? 'Prior week columns will be carried forward from the uploaded file.' : 'Upload a prior Excel file to carry forward previous weeks.');
+}
+
+// ─── File Upload (carry-forward) ──────────────────────────────────────
+function onFileSelected(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const wb = XLSX.read(e.target.result, { type: 'array', cellDates: true });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+      if (!rows.length) throw new Error('Empty file');
+
+      // Parse header row: find week date columns (columns starting at D / index 3)
+      const header = rows[0];
+      const weekDates = [];
+      const weekColIdxs = [];
+      for (let c = 3; c < header.length - 1; c++) {
+        const v = header[c];
+        if (!v) continue;
+        let d;
+        if (v instanceof Date) { d = v; }
+        else if (typeof v === 'number') { d = XLSX.SSF.parse_date_code(v); d = new Date(d.y, d.m-1, d.d); }
+        else { d = new Date(v); }
+        if (!isNaN(d.getTime())) { weekDates.push(d); weekColIdxs.push(c); }
+      }
+
+      // Find notes column (last text column)
+      const notesColIdx = header.length - 1;
+
+      // Build project map: project name → { weekRevs: [...], notes: str }
+      const byProject = {};
+      for (let r = 1; r < rows.length; r++) {
+        const row = rows[r];
+        const projName = String(row[2] || '').trim();
+        if (!projName) continue;
+        const weekRevs = weekColIdxs.map(c => {
+          const v = row[c];
+          return (typeof v === 'number') ? v : parseFloat(String(v).replace(/[$,]/g, '')) || 0;
+        });
+        const notes = String(row[notesColIdx] || '').trim();
+        byProject[projName] = { weekRevs, notes };
+      }
+
+      _priorData = { weekDates, byProject };
+
+      const area = document.getElementById('upload-area');
+      area.classList.add('loaded');
+      area.textContent = '✓ ' + file.name + ' (' + weekDates.length + ' weeks loaded)';
+      updateWeekNote();
+    } catch(err) {
+      alert('Could not read the file: ' + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ─── Main: Generate Projection ────────────────────────────────────────
+async function generateProjection() {
+  if (!TW.connected) {
+    alert('Please connect to Teamwork first using the button in the top-right corner.');
+    return;
+  }
+
+  const y = parseInt(document.getElementById('proj-year').value);
+  const m = parseInt(document.getElementById('proj-month').value);
+  _weekFridays = getMonthFridays(y, m);
+  _currentWeekIdx = parseInt(document.getElementById('proj-week').value);
+
+  const monthStart = fmtYYYYMMDD(new Date(y, m - 1, 1));
+  const monthEnd   = fmtYYYYMMDD(new Date(y, m, 0));
+
+  document.getElementById('kpi-section').classList.add('hidden');
+  document.getElementById('preview-section').classList.add('hidden');
+
+  try {
+    // 1. Fetch projects
+    showLoading('Fetching projects from Teamwork…');
+    const { projects, companyMap, categoryMap } = await TW.fetchProjects();
+
+    // 2. Filter to PS projects (T&M or Fixed Fee) — case-insensitive match
+    const psProjects = projects.filter(p => {
+      const catId = p.categoryId || p.category?.id;
+      const cat = (catId && categoryMap[catId] ? categoryMap[catId].name : '').trim().toLowerCase();
+      return cat === 't&m' || cat === 'fixed fee';
+    });
+
+    // Diagnostic: log all project categories found
+    const allCats = [...new Set(projects.map(p => {
+      const catId = p.categoryId || p.category?.id;
+      return catId && categoryMap[catId] ? '"' + categoryMap[catId].name + '"' : '(no category)';
+    }))];
+    let diagLog = '=== FETCH RESULTS ===\n';
+    diagLog += 'Total projects fetched: ' + projects.length + '\n';
+    diagLog += 'Categories found: ' + allCats.join(', ') + '\n';
+    diagLog += 'PS projects matched (T&M or Fixed Fee): ' + psProjects.length + '\n';
+    diagLog += 'Month window: ' + monthStart + ' → ' + monthEnd + '\n';
+    diagLog += 'T&M method: project time budget (capacity - capacityUsed) in hours\n\n';
+
+    if (!psProjects.length) {
+      diagLog += '⚠ No projects matched. Check that Teamwork category names are exactly "T&M" or "Fixed Fee".\n';
+      document.getElementById('diag-log').textContent = diagLog;
+      document.getElementById('diag-section').classList.remove('hidden');
+      hideLoading();
+      return;
+    }
+
+    // 3. For each project, fetch tasks/milestones + time entries in parallel
+    showLoading('Calculating projections…', 'Fetching tasks, milestones, and time entries per project');
+    const rows = await Promise.all(psProjects.map(async (p) => {
+      const catId    = p.categoryId || p.category?.id;
+      const catRaw   = (catId && categoryMap[catId] ? categoryMap[catId].name : '').trim();
+      const category = catRaw;  // keep original casing for display
+      const catKey   = catRaw.toLowerCase();
+      const clientName = p.companyId && companyMap[p.companyId] ? companyMap[p.companyId].name : (p.company?.name || '');
+
+      let revenue = 0;
+      let budgetRemaining = null;
+      let monthlyHours = null;
+      let detail  = [];   // for audit/debugging
+
+      if (catKey === 't&m') {
+        // Fetch incomplete tasks, all-time entries, and project budget in parallel
+        const [incompleteTasks, projEntries, projBudgetData] = await Promise.all([
+          TW.fetchProjectTasks(p.id, null, null),
+          TW.fetchProjectTimeEntries(p.id),
+          TW.get('/projects/api/v3/projects/' + p.id + '.json?include=projectBudgets')
+        ]);
+
+        // Build two maps: all-time logged per task, and this-month logged per task
+        // Plus total hours logged this month across the entire project (including completed tasks)
+        const loggedAllTimeByTask  = {};
+        const loggedThisMonthByTask = {};
+        let   totalLoggedThisMonth  = 0;
+
+        projEntries.forEach(e => {
+          const tid  = String(e['todo-item-id'] || e.todoItemId || '');
+          const hrs  = parseFloat(e.hours || 0) + parseFloat(e.minutes || 0) / 60;
+          const date = String(e.date || e['logged-on'] || '').replace(/-/g, '').substring(0, 8);
+
+          if (tid && tid !== '0') {
+            loggedAllTimeByTask[tid] = (loggedAllTimeByTask[tid] || 0) + hrs;
+          }
+          if (date >= monthStart && date <= monthEnd) {
+            totalLoggedThisMonth += hrs;
+            if (tid && tid !== '0') {
+              loggedThisMonthByTask[tid] = (loggedThisMonthByTask[tid] || 0) + hrs;
+            }
+          }
+        });
+
+        // Sum this month's share of each relevant incomplete task
+        let totalRemaining = 0;
+        for (const t of incompleteTasks) {
+          const dueStr = String(t['due-date'] || '');
+          if (!dueStr) continue;  // no due date — skip
+          const dueCompact = dueStr.replace(/-/g, '');
+          if (dueCompact < monthStart) continue;  // past-due — skip (PM should update date)
+
+          const startStr    = String(t['start-date'] || '');
+          const startCompact = startStr.replace(/-/g, '');
+          // Skip tasks that haven't started yet (start date is after this month)
+          if (startStr && startCompact > monthEnd) continue;
+
+          const estHrs       = parseFloat(t['estimated-minutes'] || 0) / 60;
+          if (estHrs === 0) continue; // no estimate — nothing to project
+          const loggedAllTime  = loggedAllTimeByTask[String(t.id)] || 0;
+          const loggedMonth    = loggedThisMonthByTask[String(t.id)] || 0;
+          const stillRemaining = Math.max(0, estHrs - loggedAllTime);
+
+          const dueYear    = parseInt(dueCompact.substring(0, 4));
+          const dueMon     = parseInt(dueCompact.substring(4, 6));
+          const dueInMonth = dueCompact <= monthEnd;
+
+          // Effective start: clamp to first day of selected month if task started earlier
+          const taskStartDate  = parseTWDate(startCompact);
+          const selMonthFirst  = new Date(y, m - 1, 1);
+          const effectiveStart = (!taskStartDate || taskStartDate < selMonthFirst)
+            ? selMonthFirst
+            : taskStartDate;
+          const dueDateObj = parseTWDate(dueCompact);
+
+          let thisMonthRemaining, sourceTag;
+          if (dueInMonth) {
+            // Due this month: remaining and logged are non-overlapping — add both
+            thisMonthRemaining = stillRemaining;
+            sourceTag = 'due ' + dueStr;
+          } else {
+            // Day-weighted: allocate remaining proportional to days in this month
+            const weight   = taskMonthWeight(effectiveStart, dueDateObj, y, m);
+            const dayShare = stillRemaining * weight;
+            // Subtract this month's logged hours to avoid double-counting
+            thisMonthRemaining = Math.max(0, dayShare - loggedMonth);
+            sourceTag = 'day-weighted ' + Math.round(weight * 100) + '% of '
+              + stillRemaining.toFixed(1) + 'h rem → ' + dayShare.toFixed(1)
+              + 'h this month (due ' + dueStr + ')';
+          }
+
+          totalRemaining += thisMonthRemaining;
+          detail.push({
+            task: t.content || t.id,
+            estimated: estHrs,
+            logged: loggedAllTime,
+            remaining: thisMonthRemaining,
+            source: sourceTag + ' | ' + loggedMonth.toFixed(1) + 'h logged this month'
+          });
+        }
+
+        const totalMonthProjection = totalLoggedThisMonth + totalRemaining;
+        revenue = totalMonthProjection;
+        monthlyHours = totalMonthProjection;
+        detail = [{
+          task: '— Project summary —',
+          estimated: null,
+          logged: totalLoggedThisMonth,
+          remaining: totalRemaining,
+          source: totalLoggedThisMonth.toFixed(1) + 'h logged this month + ' + totalRemaining.toFixed(1) + 'h remaining = ' + totalMonthProjection.toFixed(1) + 'h'
+        }].concat(detail);
+
+        // Budget Remaining from project time budget
+        const budgetEntries = projBudgetData.included && projBudgetData.included.projectBudgets
+          ? Object.values(projBudgetData.included.projectBudgets)
+          : [];
+        const timeBudget = budgetEntries.find(b => b.type === 'TIME') || budgetEntries[0];
+        if (timeBudget) {
+          const remainingMins = Math.max(0, (timeBudget.capacity || 0) - (timeBudget.capacityUsed || 0));
+          budgetRemaining = remainingMins / 60;
+        }
+
+      } else if (catKey === 'fixed fee') {
+        // Fixed Fee — fetch all milestones once, count this-month vs all-open
+        const allMilestones = await TW.fetchProjectMilestones(p.id, null, null);
+        let allOpenCount = 0;
+        for (const ms of allMilestones) {
+          allOpenCount++;
+          const dlStr = ms.deadline ? fmtYYYYMMDD(ms.deadline) : '';
+          if (dlStr >= monthStart && dlStr <= monthEnd) {
+            // Due this month — counts toward Monthly Estimate
+            revenue++;
+            detail.push({ milestone: ms.title });
+          }
+        }
+        budgetRemaining = allOpenCount; // Count of all open/incomplete milestones regardless of date
+      }
+
+      return {
+        revenueType: 'PS - Backlog',
+        client:      clientName,
+        project:     p.name,
+        projectId:   String(p.id),
+        category,
+        revenue,
+        budgetRemaining,
+        monthlyHours,
+        detail
+      };
+    }));
+
+    // Build per-project diagnostic lines
+    diagLog += '=== PER-PROJECT RESULTS ===\n';
+    diagLog += '(T&M: budget hours − billable logged = remaining hours | Fixed Fee: milestone counts)\n\n';
+    rows.forEach(r => {
+      diagLog += '[' + r.category + '] ' + r.client + ' — ' + r.project + '\n';
+      if (r.category.toLowerCase() === 't&m') {
+        diagLog += '  Hours: ' + r.revenue.toFixed(1) + 'h\n';
+      } else {
+        diagLog += '  Milestones this month: ' + r.revenue + '\n';
+      }
+      if (r.detail.length) {
+        r.detail.forEach(d => {
+          if (d.task !== undefined) {
+            const estStr  = d.estimated != null ? d.estimated.toFixed(1) + 'h' : '—';
+            const logStr  = d.logged    != null ? d.logged.toFixed(1)    + 'h' : '—';
+            const remStr  = d.remaining != null ? d.remaining.toFixed(1) + 'h' : '—';
+            const srcStr  = d.source ? ' [' + d.source + ']' : '';
+            diagLog += '  Task: "' + d.task + '" | Est: ' + estStr + ' | Logged: ' + logStr + ' | Remaining: ' + remStr + srcStr + '\n';
+          } else {
+            diagLog += '  Milestone: "' + d.milestone + '"\n';
+          }
+        });
+      } else {
+        diagLog += '  (no tasks/milestones found in this month)\n';
+      }
+      diagLog += '\n';
+    });
+
+    document.getElementById('diag-log').textContent = diagLog;
+    // Show the panel collapsed — user can expand via toggle
+    document.getElementById('diag-section').classList.remove('hidden');
+    document.getElementById('diag-log').style.display = 'none';
+    document.getElementById('diag-toggle').textContent = '▶ Show';
+
+    // Sort: Fixed Fee first (milestone-based), then T&M; within each group by client name
+    rows.sort((a, b) => {
+      if (a.category.toLowerCase() !== b.category.toLowerCase()) return a.category.toLowerCase() === 'fixed fee' ? -1 : 1;
+      return a.client.localeCompare(b.client);
+    });
+
+    _projectionRows = rows;
+    _lastResult = { rows, weekFridays: _weekFridays, currentWeekIdx: _currentWeekIdx, year: y, month: m };
+
+    hideLoading();
+    renderKPIs(rows, y, m);
+    renderPreviewTable(rows, _weekFridays, _currentWeekIdx, _priorData);
+
+  } catch(err) {
+    hideLoading();
+    alert('Error: ' + err.message);
+    console.error(err);
+  }
+}
+
+// ─── KPI Rendering ────────────────────────────────────────────────────
+function renderKPIs(rows, year, month) {
+  const total = rows.filter(r => r.category.toLowerCase() === 't&m').reduce((s, r) => s + r.revenue, 0);
+
+  // Compute prior week total for delta
+  let priorTotal = null;
+  if (_priorData && _priorData.weekDates.length) {
+    priorTotal = 0;
+    rows.forEach(r => {
+      const p = _priorData.byProject[r.project];
+      if (p && p.weekRevs.length) {
+        priorTotal += (p.weekRevs[p.weekRevs.length - 1] || 0);
+      }
+    });
+  }
+
+  const delta = (priorTotal !== null) ? total - priorTotal : null;
+  const tmProjects = rows.filter(r => r.category.toLowerCase() === 't&m').length;
+  const ffProjects = rows.filter(r => r.category.toLowerCase() === 'fixed fee').length;
+  const activeCount = rows.length;
+
+  document.getElementById('kpi-total').textContent = fmtHours(total) + ' total hrs';
+  document.getElementById('kpi-month-label').textContent =
+    new Date(year, month - 1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+  const deltaEl = document.getElementById('kpi-delta');
+  if (delta !== null) {
+    deltaEl.textContent = (delta >= 0 ? '+' : '') + fmtHours(delta);
+    deltaEl.style.color = delta >= 0 ? 'var(--green)' : 'var(--red)';
+  } else {
+    deltaEl.textContent = '—';
+    deltaEl.style.color = 'var(--gray-500)';
+  }
+
+  document.getElementById('kpi-projects').textContent = activeCount;
+  document.getElementById('kpi-projects-sub').textContent = 'of ' + rows.length + ' PS projects';
+  document.getElementById('kpi-tm').textContent = tmProjects;
+  document.getElementById('kpi-ff').textContent = ffProjects;
+
+  document.getElementById('kpi-section').classList.remove('hidden');
+}
+
+// ─── Preview Table ────────────────────────────────────────────────────
+function renderPreviewTable(rows, fridays, currentWeekIdx, priorData) {
+  const thead = document.getElementById('preview-thead');
+  const tbody = document.getElementById('preview-tbody');
+
+  // Build header
+  let thHtml = '<tr>';
+  thHtml += '<th>Client / Project</th>';
+  thHtml += '<th>Type</th>';
+
+  // Prior week columns (from uploaded file)
+  let priorWeekCount = 0;
+  if (priorData && priorData.weekDates.length) {
+    priorData.weekDates.forEach((d, i) => {
+      // Only show prior weeks (not the current week being updated)
+      thHtml += '<th>' + fmtWeekHeader(d) + '</th>';
+      priorWeekCount++;
+    });
+  } else {
+    // Show all week columns with empty prior data
+    fridays.forEach((f, i) => {
+      if (i < currentWeekIdx) {
+        thHtml += '<th>' + fmtWeekHeader(f) + '</th>';
+        priorWeekCount++;
+      }
+    });
+  }
+
+  // Current week columns (highlighted)
+  thHtml += '<th class="current-week">📊 Monthly Hours</th>';
+  thHtml += '<th class="current-week">⏱ Budget Hours / Milestones</th>';
+
+  // Variance column (if prior data)
+  if (priorData && priorData.weekDates.length) {
+    thHtml += '<th>Δ vs Prior</th>';
+  }
+
+  thHtml += '</tr>';
+  thead.innerHTML = thHtml;
+
+  // Build rows
+  let totalsByCol = new Array(priorWeekCount).fill(0);
+  let totalCurrentTM = 0;
+  let totalDelta = 0;
+
+  let tbHtml = '';
+  rows.forEach(r => {
+    const prior = priorData ? priorData.byProject[r.project] : null;
+    const isTM = r.category.toLowerCase() === 't&m';
+    const badge = isTM
+      ? '<span class="badge-tm">T&amp;M</span>'
+      : '<span class="badge-ff">Fixed Fee</span>';
+
+    tbHtml += '<tr>';
+    tbHtml += '<td><div class="proj-name">' + esc(r.project) + '</div>' +
+              '<div class="proj-client">' + esc(r.client) + '</div></td>';
+    tbHtml += '<td class="category-badge">' + badge + '</td>';
+
+    // Prior week columns
+    if (priorData && prior && prior.weekRevs.length) {
+      prior.weekRevs.forEach((v, i) => {
+        totalsByCol[i] = (totalsByCol[i] || 0) + v;
+        tbHtml += '<td class="num">' + (v ? fmtHours(v) : '<span class="badge-zero">—</span>') + '</td>';
+      });
+    } else if (priorData) {
+      // Project not in prior file
+      for (let i = 0; i < priorWeekCount; i++) {
+        tbHtml += '<td class="num"><span class="badge-zero">—</span></td>';
+      }
+    } else {
+      // No prior file, show blanks for columns before current
+      for (let i = 0; i < priorWeekCount; i++) {
+        tbHtml += '<td class="num"><span class="badge-zero">—</span></td>';
+      }
+    }
+
+    // Monthly Hours + Budget Hours / Milestones
+    if (isTM) {
+      totalCurrentTM += r.revenue;
+    }
+    const monthlyDisplay = isTM
+      ? (r.revenue ? fmtHours(r.revenue) : '<span class="badge-zero">—</span>')
+      : (r.revenue != null ? fmtCount(r.revenue) : '<span class="badge-zero">—</span>');
+    tbHtml += '<td class="num current-week">' + monthlyDisplay + '</td>';
+
+    const br = r.budgetRemaining;
+    const budgetDisplay = isTM
+      ? (br != null ? fmtHours(br) : '<span class="badge-zero">—</span>')
+      : (br != null ? fmtCount(br) : '<span class="badge-zero">—</span>');
+    tbHtml += '<td class="num current-week">' + budgetDisplay + '</td>';
+
+    // Delta
+    if (priorData && priorData.weekDates.length) {
+      const priorVal = (prior && prior.weekRevs.length) ? prior.weekRevs[prior.weekRevs.length - 1] : 0;
+      const delta = r.revenue - priorVal;
+      totalDelta += delta;
+      if (delta > 0)       tbHtml += '<td class="num"><span class="delta-pos">+' + fmtHours(delta) + '</span></td>';
+      else if (delta < 0)  tbHtml += '<td class="num"><span class="delta-neg">' + fmtHours(delta) + '</span></td>';
+      else                 tbHtml += '<td class="num"><span class="delta-zero">—</span></td>';
+    }
+
+    tbHtml += '</tr>';
+  });
+
+  // Totals row — T&M hours total only; Fixed Fee milestone counts omitted from total
+  tbHtml += '<tr class="totals-row">';
+  tbHtml += '<td><strong>TOTAL (T&amp;M)</strong></td>';
+  tbHtml += '<td></td>';
+  totalsByCol.forEach(t => {
+    tbHtml += '<td class="num"><strong>' + fmtHours(t) + '</strong></td>';
+  });
+  tbHtml += '<td class="num current-week"><strong>' + fmtHours(totalCurrentTM) + '</strong></td>';
+  const totalBudgetRemainingTM = rows
+    .filter(r => r.category.toLowerCase() === 't&m')
+    .reduce((s, r) => s + (r.budgetRemaining || 0), 0);
+  tbHtml += '<td class="num current-week"><strong>' + fmtHours(totalBudgetRemainingTM) + '</strong></td>';
+  if (priorData && priorData.weekDates.length) {
+    const cls = totalDelta >= 0 ? 'delta-pos' : 'delta-neg';
+    tbHtml += '<td class="num"><span class="' + cls + '">' + (totalDelta >= 0 ? '+' : '') + fmtHours(totalDelta) + '</span></td>';
+  }
+  tbHtml += '</tr>';
+
+  tbody.innerHTML = tbHtml;
+
+  // Subtitle
+  const y = _lastResult.year, mo = _lastResult.month;
+  document.getElementById('preview-title').textContent =
+    'Projection — ' + new Date(y, mo - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+  const noteEl = document.getElementById('actions-note');
+  noteEl.textContent = rows.length + ' PS projects · T&M: hours from task estimates · Fixed Fee: milestone count' +
+    (priorData ? ' · Prior weeks carried forward from uploaded file.' : '');
+
+  document.getElementById('preview-section').classList.remove('hidden');
+  document.getElementById('preview-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ─── Excel Download ───────────────────────────────────────────────────
+function downloadExcel() {
+  const { rows, weekFridays, currentWeekIdx, year, month } = _lastResult;
+  const priorData = _priorData;
+
+  const wsData = [];
+
+  // Header row: Revenue Type | Client | Project | [prior weeks] | [current week] | Notes
+  const headerRow = ['Revenue Type', 'Client', 'Project / Opportunity Name'];
+
+  // Prior week date headers
+  const priorDates = [];
+  if (priorData && priorData.weekDates.length) {
+    priorData.weekDates.forEach(d => { priorDates.push(d); headerRow.push(d); });
+  } else {
+    weekFridays.forEach((f, i) => {
+      if (i < currentWeekIdx) { priorDates.push(f); headerRow.push(f); }
+    });
+  }
+
+  // Current week headers: Monthly Hours + Budget Hours / Milestones
+  headerRow.push('Monthly Hours');
+  headerRow.push('Budget Hours / Milestones');
+  headerRow.push('Notes');
+
+  wsData.push(headerRow);
+
+  // Data rows
+  rows.forEach(r => {
+    const row = [r.revenueType, r.client, r.project];
+
+    // Prior week values
+    const prior = priorData ? priorData.byProject[r.project] : null;
+    if (priorData && prior && prior.weekRevs.length) {
+      prior.weekRevs.forEach(v => row.push(v || 0));
+    } else {
+      for (let i = 0; i < priorDates.length; i++) row.push(0);
+    }
+
+    // Monthly Hours + Budget Hours / Milestones
+    row.push(r.revenue);
+    row.push(r.budgetRemaining != null ? r.budgetRemaining : '');
+
+    // Notes (carry forward from prior, else blank)
+    const notes = (prior && prior.notes) ? prior.notes : '';
+    row.push(notes);
+
+    wsData.push(row);
+  });
+
+  // Totals row with SUM formulas
+  const totalsRow = ['', '', 'TOTAL'];
+  const dataStartRow = 2; // Excel row 2 (1-indexed)
+  const dataEndRow   = rows.length + 1;
+  const totalCols    = priorDates.length + 2; // prior weeks + Monthly Hours + Budget Hours
+  for (let c = 0; c < totalCols; c++) {
+    const colLetter = String.fromCharCode(68 + c); // D, E, F, G, ...
+    totalsRow.push({ f: 'SUM(' + colLetter + dataStartRow + ':' + colLetter + dataEndRow + ')' });
+  }
+  totalsRow.push(''); // Notes column
+  wsData.push(totalsRow);
+
+  // Build workbook
+  const ws = XLSX.utils.aoa_to_sheet(wsData, { cellDates: true, dateNF: 'yyyy-mm-dd' });
+
+  // Set column widths
+  ws['!cols'] = [
+    { wch: 12 },  // Revenue Type
+    { wch: 28 },  // Client
+    { wch: 50 },  // Project Name
+    ...Array(totalCols).fill({ wch: 14 }),  // Weekly columns
+    { wch: 40 }   // Notes
+  ];
+
+  // Format date header cells
+  for (let c = 3; c < 3 + totalCols; c++) {
+    const cell = ws[XLSX.utils.encode_cell({ r: 0, c })];
+    if (cell) { cell.t = 'd'; }
+  }
+
+  // Format numeric cells (data + totals rows) as number with 1 decimal
+  for (let r = 1; r < wsData.length; r++) {
+    for (let c = 3; c < 3 + totalCols; c++) {
+      const ref = XLSX.utils.encode_cell({ r, c });
+      if (ws[ref] && (ws[ref].t === 'n' || ws[ref].f)) {
+        ws[ref].z = '0.0';
+      }
+    }
+  }
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
+
+  const monthName = weekFridays[currentWeekIdx].toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+  const fileName = monthName + ' Hours.xlsx';
+
+  XLSX.writeFile(wb, fileName);
+}
+
+// ─── Modal & Connection ───────────────────────────────────────────────
+function openConnectModal() {
+  document.getElementById('tw-site').value = TW.site;
+  document.getElementById('tw-key').value  = TW.key ? '••••••••' : '';
+  document.getElementById('modal-status').className = 'modal-status';
+  document.getElementById('modal-status').textContent = '';
+  document.getElementById('btn-disconnect').style.display = TW.connected ? '' : 'none';
+  document.getElementById('connect-modal').classList.add('open');
+}
+function closeConnectModal() {
+  document.getElementById('connect-modal').classList.remove('open');
+}
+function closeOnOverlay(e) {
+  if (e.target.id === 'connect-modal') closeConnectModal();
+}
+function setModalStatus(type, msg) {
+  const el = document.getElementById('modal-status');
+  el.className = 'modal-status ' + type;
+  el.textContent = msg;
+}
+
+async function testAndConnect() {
+  const site = document.getElementById('tw-site').value.trim();
+  const keyInput = document.getElementById('tw-key').value.trim();
+  if (!site || !keyInput) { setModalStatus('error', 'Please enter both site URL and API key.'); return; }
+  const key = (keyInput === '••••••••' && TW.key) ? TW.key : keyInput;
+
+  localStorage.setItem('tw_site', site);
+  localStorage.setItem('tw_key', key);
+
+  const btn = document.getElementById('btn-connect');
+  btn.disabled = true; btn.textContent = 'Testing…';
+  setModalStatus('loading', 'Connecting to ' + site + '…');
+
+  try {
+    const person = await TW.testConnection();
+    setModalStatus('success', '✓ Connected as ' + (person.firstName || '') + ' ' + (person.lastName || ''));
+    updateHeaderStatus(true);
+    btn.textContent = 'Connected';
+    setTimeout(closeConnectModal, 800);
+  } catch(err) {
+    localStorage.removeItem('tw_site'); localStorage.removeItem('tw_key');
+    setModalStatus('error', '✗ ' + err.message);
+    btn.disabled = false; btn.textContent = 'Try Again';
+  }
+}
+
+function disconnectTeamwork() {
+  if (!confirm('Disconnect from Teamwork?')) return;
+  localStorage.removeItem('tw_site'); localStorage.removeItem('tw_key');
+  closeConnectModal();
+  updateHeaderStatus(false);
+}
+
+function updateHeaderStatus(isLive) {
+  const dot   = document.getElementById('connect-dot');
+  const label = document.getElementById('connect-label');
+  const btn   = document.getElementById('connect-btn');
+  const meta  = document.getElementById('data-source-label');
+  if (isLive) {
+    dot.classList.add('live');
+    label.textContent = TW.site;
+    btn.classList.add('connected');
+    meta.textContent = '● Live';
+    meta.style.color = '#AFCA0B';
+  } else {
+    dot.classList.remove('live');
+    label.textContent = 'Connect Teamwork';
+    btn.classList.remove('connected');
+    meta.textContent = 'Not connected to Teamwork';
+    meta.style.color = 'rgba(255,255,255,0.6)';
+  }
+}
+
+// ─── Loading ──────────────────────────────────────────────────────────
+function showLoading(msg, detail) {
+  document.getElementById('loading-text').textContent   = msg || 'Working…';
+  document.getElementById('loading-detail').textContent = detail || '';
+  document.getElementById('loading-overlay').classList.add('show');
+}
+function hideLoading() {
+  document.getElementById('loading-overlay').classList.remove('show');
+}
+
+// ─── Utility ─────────────────────────────────────────────────────────
+function esc(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ─── Boot ─────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  initControls();
+  if (TW.connected) updateHeaderStatus(true);
+});
+</script>
+</body>
+</html>
