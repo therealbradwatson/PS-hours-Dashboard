@@ -1047,7 +1047,7 @@ async function generateProjection() {
     const psProjects = projects.filter(p => {
       const catId = p.categoryId || p.category?.id;
       const cat = (catId && categoryMap[catId] ? categoryMap[catId].name : '').trim().toLowerCase();
-      return cat === 't&m' || cat === 'fixed fee';
+      return cat.includes('t&m') || cat.includes('fixed fee');
     });
 
     // Diagnostic: log all project categories found
@@ -1084,7 +1084,7 @@ async function generateProjection() {
       let monthlyHours = null;
       let detail  = [];   // for audit/debugging
 
-      if (catKey === 't&m') {
+      if (catKey.includes('t&m')) {
         // Fetch incomplete tasks, all-time entries, and project budget in parallel
         const [incompleteTasks, projEntries, projBudgetData] = await Promise.all([
           TW.fetchProjectTasks(p.id, null, null),
@@ -1192,7 +1192,7 @@ async function generateProjection() {
           budgetRemaining = remainingMins / 60;
         }
 
-      } else if (catKey === 'fixed fee') {
+      } else if (catKey.includes('fixed fee')) {
         // Fixed Fee — fetch all milestones once, count this-month vs all-open
         const allMilestones = await TW.fetchProjectMilestones(p.id, null, null);
         let allOpenCount = 0;
