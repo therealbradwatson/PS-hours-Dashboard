@@ -1047,7 +1047,7 @@ async function generateProjection() {
     const psProjects = projects.filter(p => {
       const catId = p.categoryId || p.category?.id;
       const cat = (catId && categoryMap[catId] ? categoryMap[catId].name : '').trim().toLowerCase();
-      return cat.includes('t&m') || cat.includes('fixed fee');
+      return cat === 'ps-t&m' || cat === 'ps-fixed fee';
     });
 
     // Diagnostic: log all project categories found
@@ -1084,7 +1084,7 @@ async function generateProjection() {
       let monthlyHours = null;
       let detail  = [];   // for audit/debugging
 
-      if (catKey.includes('t&m')) {
+      if (catKey === 'ps-t&m') {
         // Fetch incomplete tasks, all-time entries, and project budget in parallel
         const [incompleteTasks, projEntries, projBudgetData] = await Promise.all([
           TW.fetchProjectTasks(p.id, null, null),
@@ -1192,7 +1192,7 @@ async function generateProjection() {
           budgetRemaining = remainingMins / 60;
         }
 
-      } else if (catKey.includes('fixed fee')) {
+      } else if (catKey === 'ps-fixed fee') {
         // Fixed Fee — fetch all milestones once, count this-month vs all-open
         const allMilestones = await TW.fetchProjectMilestones(p.id, null, null);
         let allOpenCount = 0;
@@ -1226,7 +1226,7 @@ async function generateProjection() {
     diagLog += '(T&M: budget hours − billable logged = remaining hours | Fixed Fee: milestone counts)\n\n';
     rows.forEach(r => {
       diagLog += '[' + r.category + '] ' + r.client + ' — ' + r.project + '\n';
-      if (r.category.toLowerCase().includes('t&m')) {
+      if (r.category.toLowerCase() === 'ps-t&m') {
         diagLog += '  Hours: ' + r.revenue.toFixed(1) + 'h\n';
       } else {
         diagLog += '  Milestones this month: ' + r.revenue + '\n';
@@ -1257,7 +1257,7 @@ async function generateProjection() {
 
     // Sort: Fixed Fee first (milestone-based), then T&M; within each group by client name
     rows.sort((a, b) => {
-      if (a.category.toLowerCase() !== b.category.toLowerCase()) return a.category.toLowerCase().includes('fixed fee') ? -1 : 1;
+      if (a.category.toLowerCase() !== b.category.toLowerCase()) return a.category.toLowerCase() === 'ps-fixed fee' ? -1 : 1;
       return a.client.localeCompare(b.client);
     });
 
@@ -1277,7 +1277,7 @@ async function generateProjection() {
 
 // ─── KPI Rendering ────────────────────────────────────────────────────
 function renderKPIs(rows, year, month) {
-  const total = rows.filter(r => r.category.toLowerCase().includes('t&m')).reduce((s, r) => s + r.revenue, 0);
+  const total = rows.filter(r => r.category.toLowerCase() === 'ps-t&m').reduce((s, r) => s + r.revenue, 0);
 
   // Compute prior week total for delta
   let priorTotal = null;
@@ -1292,8 +1292,8 @@ function renderKPIs(rows, year, month) {
   }
 
   const delta = (priorTotal !== null) ? total - priorTotal : null;
-  const tmProjects = rows.filter(r => r.category.toLowerCase().includes('t&m')).length;
-  const ffProjects = rows.filter(r => r.category.toLowerCase().includes('fixed fee')).length;
+  const tmProjects = rows.filter(r => r.category.toLowerCase() === 'ps-t&m').length;
+  const ffProjects = rows.filter(r => r.category.toLowerCase() === 'ps-fixed fee').length;
   const activeCount = rows.length;
 
   document.getElementById('kpi-total').textContent = fmtHours(total) + ' total hrs';
@@ -1365,7 +1365,7 @@ function renderPreviewTable(rows, fridays, currentWeekIdx, priorData) {
   let tbHtml = '';
   rows.forEach(r => {
     const prior = priorData ? priorData.byProject[r.project] : null;
-    const isTM = r.category.toLowerCase().includes('t&m');
+    const isTM = r.category.toLowerCase() === 'ps-t&m';
     const badge = isTM
       ? '<span class="badge-tm">T&amp;M</span>'
       : '<span class="badge-ff">Fixed Fee</span>';
@@ -1430,7 +1430,7 @@ function renderPreviewTable(rows, fridays, currentWeekIdx, priorData) {
   });
   tbHtml += '<td class="num current-week"><strong>' + fmtHours(totalCurrentTM) + '</strong></td>';
   const totalBudgetRemainingTM = rows
-    .filter(r => r.category.toLowerCase().includes('t&m'))
+    .filter(r => r.category.toLowerCase() === 'ps-t&m')
     .reduce((s, r) => s + (r.budgetRemaining || 0), 0);
   tbHtml += '<td class="num current-week"><strong>' + fmtHours(totalBudgetRemainingTM) + '</strong></td>';
   if (priorData && priorData.weekDates.length) {
@@ -1650,7 +1650,7 @@ function showProjectDetail(projectId) {
   document.getElementById('detail-modal-title').textContent = r.project;
   document.getElementById('detail-modal-subtitle').textContent = r.client + ' · ' + r.category;
 
-  const isTM = r.category.toLowerCase().includes('t&m');
+  const isTM = r.category.toLowerCase() === 'ps-t&m';
 
   // Summary bar
   let sumHtml = '';
